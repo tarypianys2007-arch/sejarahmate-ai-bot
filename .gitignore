@@ -1,0 +1,17 @@
+# Environment variables — NEVER commit real tokens
+.env
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+logs/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Temporary diagnostic files
+src/_diag.mjs
