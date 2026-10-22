@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SejarahMate AI &#x1F1F2;&#x1F1FE; &mdash; Tutor Sejarah Interaktif</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #f0f4f8;
+      --surface: #ffffff;
+      --header:  #cc0001;
+      --accent:  #cc0001;
+      --accent2: #1a56a0;
+      --bot-bg:  #ffffff;
+      --user-bg: #1a56a0;
+      --user-fg: #ffffff;
+      --muted:   #6b7280;
+      --border:  #e5e7eb;
+      --radius:  14px;
+      --shadow:  0 2px 12px rgba(0,0,0,.10);
+    }
+
+    body {
+      font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      background: var(--header);
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    header .logo { font-size: 1.8rem; }
+    header .title-block h1 { font-size: 1.15rem; font-weight: 700; }
+    header .title-block p  { font-size: .78rem; opacity: .88; margin-top: 1px; }
+    header .telegram-link {
+      margin-left: auto;
+      background: rgba(255,255,255,.18);
+      color: #fff;
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: .78rem;
+      font-weight: 600;
+      white-space: nowrap;
+      border: 1px solid rgba(255,255,255,.3);
+      transition: background .2s;
+    }
+    header .telegram-link:hover { background: rgba(255,255,255,.28); }
+
+    .timeline-bar {
+      width: 100%;
+      max-width: 860px;
+      background: var(--accent2);
+      color: #fff;
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding: 0 8px;
+    }
+    .timeline-bar::-webkit-scrollbar { display: none; }
+    .timeline-bar button {
+      background: none;
+      border: none;
+      color: #fff;
+      padding: 9px 16px;
+      font-size: .78rem;
+      white-space: nowrap;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: border-color .2s, background .2s;
+    }
+    .timeline-bar button:hover,
+    .timeline-bar button.active {
+      border-bottom-color: #ffd700;
+      background: rgba(255,255,255,.1);
+    }
+
+    .chat-wrapper {
+      width: 100%;
+      max-width: 860px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 0 12px 12px;
+    }
+
+    #chat-window {
+      flex: 1;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow-y: auto;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 420px;
+      max-height: calc(100vh - 260px);
+      margin-top: 12px;
+    }
+
+    .msg { display: flex; align-items: flex-end; gap: 8px; max-width: 100%; }
+    .msg.bot  { justify-content: flex-start; }
+    .msg.user { justify-content: flex-end; }
+
+    .avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .bubble {
+      max-width: 78%;
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: .92rem;
+      line-height: 1.55;
+      word-break: break-word;
+    }
+    .msg.bot  .bubble { background: var(--bot-bg); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+    .msg.user .bubble { background: var(--user-bg); color: var(--user-fg); border-bottom-right-radius: 4px; }
+
+    .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .chat-btn {
+      background: #f0f4f8;
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 7px 14px;
+      font-size: .82rem;
+      cursor: pointer;
+      color: #1f2328;
+      transition: background .15s, border-color .15s;
+      font-family: inherit;
+    }
+    .chat-btn:hover { background: #e2e8f0; border-color: var(--accent2); }
+
+    .quiz-card {
+      background: #f8fafc;
+      border: 1.5px solid var(--border);
+      border-left: 4px solid var(--accent2);
+      border-radius: 10px;
+      padding: 14px;
+      font-size: .88rem;
+    }
+    .quiz-card .q-text { font-weight: 600; margin-bottom: 10px; line-height: 1.5; }
+    .quiz-card .q-opts { display: flex; flex-direction: column; gap: 6px; }
+    .quiz-card .q-opt {
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: .85rem;
+      text-align: left;
+      font-family: inherit;
+      transition: background .15s, border-color .15s;
+    }
+    .quiz-card .q-opt:hover   { background: #eff6ff; border-color: var(--accent2); }
+    .quiz-card .q-opt.correct { background: #dcfce7; border-color: #16a34a; color: #15803d; }
+    .quiz-card .q-opt.wrong   { background: #fee2e2; border-color: #dc2626; color: #b91c1c; }
+    .quiz-card .q-opt:disabled { cursor: default; }
+
+    .timeline-panel {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      margin-top: 12px;
+      display: none;
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+    .timeline-panel.open { display: block; }
+    .timeline-panel h2 { font-size: 1rem; color: var(--accent2); margin-bottom: 16px; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+    .tl-item { display: flex; gap: 14px; margin-bottom: 14px; }
+    .tl-year {
+      min-width: 72px;
+      font-weight: 700;
+      font-size: .82rem;
+      color: var(--accent);
+      background: #fff0f0;
+      border: 1.5px solid #fca5a5;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      height: fit-content;
+    }
+    .tl-desc { font-size: .87rem; line-height: 1.55; color: #374151; }
+    .tl-close {
+      display: block; margin: 0 auto 4px;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 8px;
+      padding: 8px 22px; cursor: pointer; font-size: .85rem;
+    }
+
+    .input-bar {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      align-items: flex-end;
+    }
+    #user-input {
+      flex: 1;
+      border: 1.5px solid var(--border);
+      border-radius: 24px;
+      padding: 10px 18px;
+      font-size: .92rem;
+      font-family: inherit;
+      outline: none;
+      resize: none;
+      max-height: 100px;
+      transition: border-color .2s;
+      background: var(--surface);
+    }
+    #user-input:focus { border-color: var(--accent2); }
+    #send-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 44px; height: 44px;
+      font-size: 1.25rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background .2s;
+    }
+    #send-btn:hover { background: #a30001; }
+
+    .typing { display: flex; align-items: center; gap: 5px; padding: 8px 14px; }
+    .typing span {
+      width: 7px; height: 7px;
+      background: var(--muted);
+      border-radius: 50%;
+      animation: bounce .9s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: .18s; }
+    .typing span:nth-child(3) { animation-delay: .36s; }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+    footer {
+      font-size: .73rem;
+      color: var(--muted);
+      text-align: center;
+      padding: 10px;
+    }
+    footer a { color: var(--accent2); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media(max-width:520px) {
+      .bubble { max-width: 90%; font-size: .87rem; }
+      header .telegram-link { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">&#x1F1F2;&#x1F1FE;</span>
+  <div class="title-block">
+    <h1>SejarahMate AI</h1>
+    <p>Tutor Sejarah Interaktif &middot; Form 4 &amp; 5</p>
+  </div>
+  <a class="telegram-link" href="https://t.me/SejarahMate_bot" target="_blank" rel="noopener">
+    &#x1F4F1; Buka di Telegram
+  </a>
+</header>
+
+<div class="timeline-bar">
+  <button onclick="showTimeline('melaka')">&#x1F3F0; Melaka</button>
+  <button onclick="showTimeline('pembentukan')">&#x1F91D; Pembentukan Malaysia</button>
+  <button onclick="showTimeline('jepun')">&#x2694;&#xFE0F; Pendudukan Jepun</button>
+  <button onclick="showTimeline('merdeka')">&#x1F396;&#xFE0F; Kemerdekaan</button>
+</div>
+
+<div class="chat-wrapper">
+  <div class="timeline-panel" id="timeline-panel">
+    <h2 id="tl-title"></h2>
+    <div id="tl-body"></div>
+    <button class="tl-close" onclick="closeTimeline()">&#x2715; Tutup Garis Masa</button>
+  </div>
+
+  <div id="chat-window"></div>
+
+  <div class="input-bar">
+    <textarea id="user-input" rows="1" placeholder="Taip mesej atau klik butang di atas..." autocomplete="off"></textarea>
+    <button id="send-btn" title="Hantar">&#x27A4;</button>
+  </div>
+</div>
+
+<footer>
+  SejarahMate AI &middot; Rule-based, tiada AI generatif &middot;
+  <a href="https://github.com/tarypianys2007-arch/sejarahmate-ai-bot" target="_blank" rel="noopener">GitHub</a> &middot;
+  <a href="https://t.me/SejarahMate_bot" target="_blank" rel="noopener">Telegram Bot</a>
+</footer>
+
+<script>
+// ── DATA (ported from src/concepts.js + src/quizData.js) ─────────────────────
+
+const CONCEPTS = {
+  melaka: {
+    text: "Kesultanan Melayu Melaka diasaskan oleh Parameswara (~1400M). Ia menjadi pusat perdagangan & penyebaran Islam di Asia Tenggara. Jatuh ke tangan Portugis pada 1511. Nak tahu lebih atau buat kuiz?",
+    emoji: "\u{1F3F0}",
+    buttons: ["\u{1F4D6} Lagi Fakta Melaka", "\u{1F9E0} Kuiz Melaka", "\u2B05\uFE0F Kembali"],
+  },
+  melaka_lagi: {
+    text: "Melaka ada sistem pemerintahan tersendiri: Sultan \u2192 Bendahara \u2192 Temenggung \u2192 Laksamana. Tun Perak ialah Bendahara paling hebat. Bahasa Melayu jadi lingua franca perdagangan! Nak buat kuiz sekarang?",
+    emoji: "\u{1F4DC}",
+    buttons: ["\u{1F9E0} Kuiz Melaka", "\u2B05\uFE0F Kembali ke Topik"],
+  },
+  pembentukan_malaysia: {
+    text: "Malaysia dibentuk pada 16 Sept 1963 melibatkan Tanah Melayu, Sabah, Sarawak & Singapura. Idea ini dicadangkan Tunku Abdul Rahman pada 1961. Nak saya bagi faktor-faktornya atau terus kuiz?",
+    emoji: "\u{1F91D}",
+    buttons: ["\u{1F4D6} Faktor Pembentukan", "\u{1F9E0} Kuiz Pembentukan Malaysia", "\u2B05\uFE0F Kembali"],
+  },
+  pembentukan_faktor: {
+    text: "3 Faktor Utama: 1) Ancaman komunis, 2) Ekonomi lebih kukuh bersama, 3) Kepentingan politik Britain. Perjanjian Malaysia ditandatangani 9 Jul 1963. Nak buat kuiz sekarang?",
+    emoji: "\u26A1",
+    buttons: ["\u{1F9E0} Kuiz Pembentukan Malaysia", "\u2B05\uFE0F Kembali ke Topik"],
+  },
+  jepun: {
+    text: "Jepun menduduki Tanah Melayu dari 8 Dis 1941 hingga 15 Ogos 1945. Zaman ini penuh penderitaan: kebuluran, kerja paksa & kekejaman. Pendudukan Jepun beri kesedaran nasionalisme kepada rakyat Melayu. Nak tahu lebih?",
+    emoji: "\u2694\uFE0F",
+    buttons: ["\u{1F4D6} Kesan Pendudukan Jepun", "\u2B05\uFE0F Kembali"],
+  },
+  jepun_kesan: {
+    text: "Kesan: Rakyat sedar pentingnya bersatu untuk lawan penjajah. Nasionalisme Melayu berkembang pesat selepas Jepun kalah. Ini buka jalan ke arah kemerdekaan 1957!",
+    emoji: "\u{1F4A1}",
+    buttons: ["\u2B05\uFE0F Kembali ke Topik", "\u{1F3E0} Menu Utama"],
+  },
+};
+
+const KEYWORD_MAP = {
+  "parameswara": "melaka",
+  "melaka": "melaka",
+  "kesultanan melaka": "melaka",
+  "kesultanan melayu melaka": "melaka",
+  "tun perak": "melaka",
+  "hang tuah": "melaka",
+  "pembentukan malaysia": "pembentukan_malaysia",
+  "malaysia": "pembentukan_malaysia",
+  "16 september": "pembentukan_malaysia",
+  "tunku abdul rahman": "pembentukan_malaysia",
+  "tunku": "pembentukan_malaysia",
+  "jepun": "jepun",
+  "pendudukan jepun": "jepun",
+  "darurat": "jepun",
+};
+
+const TOPIC_NAMES = {
+  melaka: "Kesultanan Melayu Melaka",
+  pembentukan_malaysia: "Pembentukan Malaysia",
+  jepun: "Pendudukan Jepun",
+};
+
+const QUIZ_MELAKA = [
+  { q:"Siapakah pengasas Kesultanan Melayu Melaka?", opts:["Tun Perak","Parameswara","Sultan Mansur Shah","Hang Tuah"], ans:1, exp:"Parameswara ialah pengasas Melaka sekitar tahun 1400 M." },
+  { q:"Apakah faktor utama kejayaan perdagangan Melaka?", opts:["Kedudukan geografi strategik","Tentera laut yang kuat","Perlombongan bijih timah","Hubungan dengan China sahaja"], ans:0, exp:"Kedudukan Melaka di Selat Melaka menjadi laluan utama perdagangan dunia." },
+  { q:"Siapakah Bendahara paling terkenal semasa zaman kegemilangan Melaka?", opts:["Tun Ali","Tun Mutahir","Tun Perak","Tun Fatimah"], ans:2, exp:"Tun Perak ialah Bendahara paling berpengaruh yang memperluas kuasa Melaka." },
+];
+
+const QUIZ_PEMBENTUKAN = [
+  { q:"Siapakah yang mencadangkan idea Pembentukan Malaysia pada tahun 1961?", opts:["Tun Abdul Razak","Tunku Abdul Rahman","Tun Hussein Onn","Tan Cheng Lock"], ans:1, exp:"Tunku Abdul Rahman mencadangkan idea Malaysia dalam ucapannya pada 27 Mei 1961." },
+  { q:"Malaysia dibentuk secara rasmi pada tarikh?", opts:["31 Ogos 1957","16 September 1963","9 Ogos 1965","1 Januari 1960"], ans:1, exp:"Malaysia terbentuk pada 16 September 1963 melibatkan Tanah Melayu, Sabah, Sarawak & Singapura." },
+  { q:"Negara manakah yang keluar dari Malaysia pada tahun 1965?", opts:["Sarawak","Sabah","Singapura","Brunei"], ans:2, exp:"Singapura keluar dari Malaysia pada 9 Ogos 1965 dan menjadi negara merdeka." },
+];
+
+const TIMELINES = {
+  melaka: {
+    title: "Garis Masa — Kesultanan Melayu Melaka",
+    items: [
+      {y:"~1400 M", d:"Parameswara membuka Melaka sebagai pelabuhan perdagangan."},
+      {y:"~1409 M", d:"China menghantar utusan; hubungan diplomatik dengan dinasti Ming dimulakan."},
+      {y:"~1414 M", d:"Parameswara memeluk Islam; agama Islam mula tersebar di Melaka."},
+      {y:"~1446 M", d:"Tun Perak dilantik sebagai Bendahara; era kegemilangan bermula."},
+      {y:"~1460 M", d:"Melaka menjadi pusat perdagangan rempah terbesar di Asia Tenggara."},
+      {y:"1511 M",  d:"Portugis di bawah Alfonso de Albuquerque menakluk Melaka; Kesultanan jatuh."},
+    ]
+  },
+  pembentukan: {
+    title: "Garis Masa — Pembentukan Malaysia",
+    items: [
+      {y:"1957",        d:"Tanah Melayu merdeka pada 31 Ogos di bawah Tunku Abdul Rahman."},
+      {y:"27 Mei 1961", d:"Tunku mencadangkan konsep Malaysia melibatkan Singapura, Sabah, Sarawak & Brunei."},
+      {y:"1962",        d:"Pungutan suara di Sabah, Sarawak & Singapura; majoriti menyokong Malaysia."},
+      {y:"9 Jul 1963",  d:"Perjanjian Malaysia ditandatangani di London."},
+      {y:"16 Sep 1963", d:"Malaysia secara rasmi terbentuk. Brunei tidak menyertai."},
+      {y:"9 Ogos 1965", d:"Singapura berpisah dari Malaysia dan menjadi republik merdeka."},
+    ]
+  },
+  jepun: {
+    title: "Garis Masa — Pendudukan Jepun",
+    items: [
+      {y:"8 Dis 1941",    d:"Jepun mendarat di Kota Bharu; pencerobohan Tanah Melayu bermula."},
+      {y:"11 Jan 1942",   d:"Jepun menguasai Kuala Lumpur."},
+      {y:"15 Feb 1942",   d:"Singapura jatuh; Leftenan Jeneral Percival menyerah kalah kepada Jeneral Yamashita."},
+      {y:"1942-1945",     d:"Era Syonan-to; pendudukan Jepun di seluruh Tanah Melayu dan Singapura."},
+      {y:"6-9 Ogos 1945", d:"Amerika Syarikat menjatuhkan bom atom ke atas Hiroshima dan Nagasaki."},
+      {y:"15 Ogos 1945",  d:"Jepun menyerah kalah; pendudukan berakhir selepas 3 tahun 8 bulan."},
+    ]
+  },
+  merdeka: {
+    title: "Garis Masa — Jalan Menuju Kemerdekaan",
+    items: [
+      {y:"1946",       d:"Malayan Union dicadangkan British; ditentang keras oleh orang Melayu."},
+      {y:"1948",       d:"Persekutuan Tanah Melayu ditubuhkan; Darurat diisytiharkan akibat ancaman komunis."},
+      {y:"1951",       d:"Parti Perikatan (UMNO-MCA) ditubuhkan; mula menuntut kemerdekaan."},
+      {y:"1955",       d:"Pilihan raya persekutuan pertama; Perikatan menang besar."},
+      {y:"8 Feb 1956", d:"Rundingan kemerdekaan di London berjaya; tarikh ditetapkan."},
+      {y:"31 Ogos 1957",d:"Kemerdekaan Tanah Melayu diisytiharkan di Stadium Merdeka, Kuala Lumpur."},
+    ]
+  },
+};
+
+// ── Session ───────────────────────────────────────────────────────────────────
+
+const S = { flow:"idle", fallbackCount:0, pausedUntil:0, quiz:null };
+
+// ── Guardrail patterns (ported from src/handler.js) ──────────────────────────
+
+const HW_RE = [
+  /buatkan\s+(karangan|esei|essay)/i,
+  /homework\s+saya/i,
+  /jawapan\s+soalan/i,
+  /tolong\s+buat\s+(esei|karangan)/i,
+  /siapkan\s+kerja/i,
+];
+const PR_RE = [
+  /saya\s+(sedih|takut|risau|stress|bosan|marah)/i,
+  /i\s+(am\s+)?(sad|stressed|scared|worried)/i,
+];
+const GREET = /^(hi|hai|hello|start|helo|hye)$/i;
+
+// ── DOM helpers ───────────────────────────────────────────────────────────────
+
+const CW = document.getElementById("chat-window");
+const UI = document.getElementById("user-input");
+const SB = document.getElementById("send-btn");
+
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const fmt = s => esc(s).replace(/\*([^*]+)\*/g,"<strong>$1</strong>").replace(/_([^_]+)_/g,"<em>$1</em>").replace(/\n/g,"<br>");
+
+function scroll() { CW.scrollTop = CW.scrollHeight; }
+
+function userMsg(text) {
+  const d = document.createElement("div");
+  d.className = "msg user";
+  d.innerHTML = `<div class="bubble">${esc(text)}</div>`;
+  CW.appendChild(d); scroll();
+}
+
+function botMsg(text, buttons) {
+  const d = document.createElement("div");
+  d.className = "msg bot";
+  let h = `<div class="avatar">&#x1F916;</div><div class="bubble">${fmt(text)}`;
+  if (buttons && buttons.length) {
+    h += `<div class="btn-group">` + buttons.map(b =>
+      `<button class="chat-btn" onclick="btnClick(${JSON.stringify(b)})">${esc(b)}</button>`
+    ).join("") + `</div>`;
+  }
+  h += `</div>`;
+  d.innerHTML = h;
+  CW.appendChild(d); scroll();
+}
+
+function quizCard(q, idx, total) {
+  const id = "qc" + Date.now();
+  const d = document.createElement("div");
+  d.className = "msg bot";
+  d.innerHTML = `<div class="avatar">&#x1F916;</div><div class="bubble">
+    <div class="quiz-card" id="${id}">
+      <div class="q-text">&#x26A1; Soalan ${idx+1}/${total}:<br><br>${esc(q.q)}</div>
+      <div class="q-opts">${["A","B","C","D"].slice(0,q.opts.length).map((L,i)=>
+        `<button class="q-opt" onclick="ansQ('${id}',${i},${q.ans},${JSON.stringify(q.exp)},this)">${L}. ${esc(q.opts[i])}</button>`
+      ).join("")}</div>
+    </div></div>`;
+  CW.appendChild(d); scroll();
+}
+
+function typing() {
+  const d = document.createElement("div");
+  d.className="msg bot"; d.id="ty";
+  d.innerHTML=`<div class="avatar">&#x1F916;</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  CW.appendChild(d); scroll();
+}
+function rmTyping() { const e=document.getElementById("ty"); if(e) e.remove(); }
+
+// ── Quiz answer ───────────────────────────────────────────────────────────────
+
+function ansQ(id, chosen, ans, exp, btn) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  card.querySelectorAll(".q-opt").forEach((o,i) => {
+    o.disabled=true;
+    if(i===ans) o.classList.add("correct");
+    else if(i===chosen) o.classList.add("wrong");
+  });
+  const ok = chosen===ans;
+  const labels = ["A","B","C","D"];
+  const msg = ok ? "\u2705 Betul! \u{1F389} " + exp : "\u274C Salah. Jawapan betul: " + labels[ans] + ". " + exp;
+  setTimeout(()=>{
+    rmTyping();
+    if (!S.quiz) return;
+    if (ok) S.quiz.score++;
+    S.quiz.index++;
+    botMsg(msg);
+    const {index, questions, score} = S.quiz;
+    if (index >= questions.length) {
+      S.flow = "quiz_done";
+      const tot = questions.length;
+      const sum = score===tot ? "Sempurna! Awak memang History Champion! \u{1F4DA}\u{1F3C6}"
+        : score>=tot/2 ? "Bagus! Teruskan usaha ya! \u{1F4AA}"
+        : "Jangan putus asa! Ulangkaji lagi dan cuba semula. \u{1F4D6}";
+      setTimeout(()=>{
+        botMsg("\u{1F3C6} Tamat! Skor awak: "+score+"/"+tot+".\n"+sum,
+          ["\u{1F501} Cuba Lagi", "\u{1F4D6} Terangkan Topik", "\u{1F3E0} Menu Utama"]);
+        S.quiz=null;
+      }, 400);
+    } else {
+      setTimeout(()=> quizCard(questions[index], index, questions.length), 400);
+    }
+  }, 200);
+}
+
+// ── Core dispatch (mirrors src/handler.js) ────────────────────────────────────
+
+function dispatch(text, isBtn) {
+  const t = text.trim();
+
+  if (Date.now() < S.pausedUntil) {
+    botMsg("\u23F3 Bot sedang berehat sebentar. Cuba lagi dalam beberapa minit ya!"); return;
+  }
+  if (!isBtn && HW_RE.some(r=>r.test(t))) {
+    S.flow="guardrail_homework";
+    botMsg("Waduh! \u{1F6D1} Saya tak boleh buat kerja sekolah awak.\nTapi saya boleh ajar awak macam mana nak faham topik ni. Nak cuba?",
+      ["\u2705 Ya","\u274C Tidak"]); return;
+  }
+  if (!isBtn && PR_RE.some(r=>r.test(t))) {
+    S.flow="guardrail_personal";
+    botMsg("Saya bot Sejarah, bukan kaunselor. Tapi saya doakan awak okay! \u{1F499}\nJom sambung belajar?",
+      ["\u2705 Ya","\u274C Tidak"]); return;
+  }
+  if (GREET.test(t) || t==="/start") {
+    S.fallbackCount=0; S.flow="main_menu";
+    botMsg("Hai! Saya SejarahMate \u{1F1F2}\u{1F1FE}. Jom belajar Sejarah!\nApa yang awak nak buat hari ni?",
+      ["\u{1F4D6} Terangkan Topik","\u{1F9E0} Mula Kuiz","\u{1F198} Bantuan"]); return;
+  }
+  if (t==="\u{1F198} Bantuan" || t==="/help") {
+    S.fallbackCount=0;
+    botMsg("*SejarahMate AI* boleh:\n\u2022 Terangkan topik Sejarah Form 4 & 5\n\u2022 Uji pengetahuan awak dengan kuiz\n\n_Saya tidak boleh buat karangan atau homework ya!_",
+      ["\u{1F4D6} Terangkan Topik","\u{1F9E0} Mula Kuiz"]); return;
+  }
+  if (t==="\u{1F4D6} Terangkan Topik") {
+    S.fallbackCount=0; S.flow="topic_menu";
+    botMsg("Boleh! Topik mana yang awak nak saya terangkan?",
+      ["\u{1F3F0} Kesultanan Melayu Melaka","\u{1F91D} Pembentukan Malaysia","\u2694\uFE0F Zaman Pendudukan Jepun","\u2B05\uFE0F Kembali"]); return;
+  }
+  const conceptMap = {
+    "\u{1F3F0} Kesultanan Melayu Melaka":"melaka",
+    "\u{1F4D6} Lagi Fakta Melaka":"melaka_lagi",
+    "\u{1F91D} Pembentukan Malaysia":"pembentukan_malaysia",
+    "\u{1F4D6} Faktor Pembentukan":"pembentukan_faktor",
+    "\u2694\uFE0F Zaman Pendudukan Jepun":"jepun",
+    "\u{1F4D6} Kesan Pendudukan Jepun":"jepun_kesan",
+  };
+  if (conceptMap[t]) {
+    S.fallbackCount=0;
+    const c=CONCEPTS[conceptMap[t]];
+    botMsg(c.emoji+" "+c.text, c.buttons); return;
+  }
+  if (t==="\u{1F9E0} Mula Kuiz"||t==="\u{1F9E0} Bagi Kuiz") {
+    S.fallbackCount=0; S.flow="quiz_menu";
+    botMsg("Jom test minda! \u{1F9E0} Pilih topik kuiz:",
+      ["\u{1F3F0} Kuiz Melaka","\u{1F91D} Kuiz Pembentukan Malaysia","\u2B05\uFE0F Kembali"]); return;
+  }
+  if (t==="\u{1F3F0} Kuiz Melaka"||t==="\u{1F9E0} Kuiz Melaka") {
+    S.fallbackCount=0; startQuiz("melaka",[...QUIZ_MELAKA].sort(()=>Math.random()-.5)); return;
+  }
+  if (t==="\u{1F91D} Kuiz Pembentukan Malaysia"||t==="\u{1F9E0} Kuiz Pembentukan Malaysia") {
+    S.fallbackCount=0; startQuiz("pembentukan",[...QUIZ_PEMBENTUKAN].sort(()=>Math.random()-.5)); return;
+  }
+  if (S.flow==="guardrail_homework"||S.flow==="guardrail_personal") {
+    if (t==="\u2705 Ya"||t==="\u2705 Ya, Terangkan") {
+      S.fallbackCount=0; S.flow="topic_menu";
+      botMsg("Awesome! \u{1F1F2}\u{1F1FE} Pilih topik yang awak nak faham:",
+        ["\u{1F3F0} Kesultanan Melayu Melaka","\u{1F91D} Pembentukan Malaysia","\u2694\uFE0F Zaman Pendudukan Jepun","\u2B05\uFE0F Kembali"]); return;
+    }
+    if (t==="\u274C Tidak"||t==="\u274C Tak, Terima Kasih") {
+      S.fallbackCount=0; S.flow="main_menu";
+      botMsg("Okay! Jika ada apa-apa, saya sedia membantu. \u{1F44B}",
+        ["\u{1F4D6} Terangkan Topik","\u{1F9E0} Mula Kuiz","\u{1F198} Bantuan"]); return;
+    }
+  }
+  if (S.flow==="quiz_done"&&t==="\u{1F501} Cuba Lagi") {
+    S.fallbackCount=0; S.flow="quiz_menu";
+    botMsg("Semangat! \u{1F525} Pilih topik kuiz:",
+      ["\u{1F3F0} Kuiz Melaka","\u{1F91D} Kuiz Pembentukan Malaysia","\u2B05\uFE0F Kembali"]); return;
+  }
+  if (t==="\u2B05\uFE0F Kembali"||t==="\u2B05\uFE0F Kembali ke Topik") {
+    S.fallbackCount=0; S.flow="topic_menu";
+    botMsg("Boleh! Topik mana yang awak nak saya terangkan?",
+      ["\u{1F3F0} Kesultanan Melayu Melaka","\u{1F91D} Pembentukan Malaysia","\u2694\uFE0F Zaman Pendudukan Jepun","\u2B05\uFE0F Kembali"]); return;
+  }
+  if (t==="\u{1F3E0} Menu Utama") {
+    S.fallbackCount=0; S.flow="main_menu";
+    botMsg("Jom! Apa yang awak nak buat seterusnya? \u{1F60A}",
+      ["\u{1F4D6} Terangkan Topik","\u{1F9E0} Mula Kuiz","\u{1F198} Bantuan"]); return;
+  }
+  if (t==="\u2705 Ya, Terangkan"&&S.flow.startsWith("slot_")) {
+    const topic=S.flow.replace("slot_",""); S.fallbackCount=0;
+    S.flow="concept_"+topic;
+    const c=CONCEPTS[topic]; if(c){botMsg(c.emoji+" "+c.text,c.buttons); return;}
+  }
+  if (!isBtn) {
+    const lo=t.toLowerCase();
+    for (const [kw,topic] of Object.entries(KEYWORD_MAP)) {
+      if (lo.includes(kw)) {
+        S.fallbackCount=0;
+        botMsg("Oh, awak nak tahu pasal "+TOPIC_NAMES[topic]+"! Nak saya terangkan lanjut atau terus buat kuiz?",
+          ["\u2705 Ya, Terangkan","\u{1F9E0} Bagi Kuiz","\u274C Tak, Terima Kasih"]);
+        S.flow="slot_"+topic; return;
+      }
+    }
+  }
+  S.fallbackCount++;
+  if (S.fallbackCount===1) {
+    botMsg("Maaf, saya tak faham \u{1F605}. Sila pilih dari menu di bawah ya:",
+      ["\u{1F4D6} Terangkan Topik","\u{1F9E0} Mula Kuiz","\u{1F198} Bantuan"]);
+  } else {
+    S.fallbackCount=0; S.pausedUntil=Date.now()+5*60*1000;
+    botMsg("Alamak, sistem saya tersangkut sikit. \u{1F613} Jom kita rehat sekejap.\nSila rujuk guru Sejarah awak untuk bantuan lanjut ya! \u{1F469}\u200D\u{1F3EB}\n\n_Bot akan aktif semula dalam 5 minit._");
+  }
+}
+
+// ── Quiz initiator ────────────────────────────────────────────────────────────
+
+function startQuiz(topic, questions) {
+  S.quiz = {topic, questions, index:0, score:0};
+  S.flow = "quiz_active";
+  botMsg("Jom test! \u26A1 "+questions.length+" soalan menanti. Sila jawab dengan klik butang!\nSiap? Mari kita mulakan! \u{1F680}");
+  setTimeout(()=> quizCard(questions[0], 0, questions.length), 300);
+}
+
+// ── Button handler ────────────────────────────────────────────────────────────
+
+function btnClick(label) {
+  userMsg(label); typing();
+  setTimeout(()=>{ rmTyping(); dispatch(label, true); }, 350);
+}
+
+// ── Send ──────────────────────────────────────────────────────────────────────
+
+function send() {
+  const v = UI.value.trim(); if(!v) return;
+  UI.value=""; UI.style.height="auto";
+  userMsg(v); typing();
+  setTimeout(()=>{ rmTyping(); dispatch(v, false); }, 400);
+}
+SB.addEventListener("click", send);
+UI.addEventListener("keydown", e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} });
+UI.addEventListener("input",()=>{ UI.style.height="auto"; UI.style.height=Math.min(UI.scrollHeight,100)+"px"; });
+
+// ── Timeline panel ────────────────────────────────────────────────────────────
+
+function showTimeline(key) {
+  const tl = TIMELINES[key]; if(!tl) return;
+  document.getElementById("tl-title").textContent = tl.title;
+  document.getElementById("tl-body").innerHTML = tl.items.map(i=>
+    `<div class="tl-item"><div class="tl-year">${esc(i.y)}</div><div class="tl-desc">${esc(i.d)}</div></div>`
+  ).join("");
+  const p = document.getElementById("timeline-panel");
+  p.classList.add("open");
+  p.scrollIntoView({behavior:"smooth",block:"start"});
+  document.querySelectorAll(".timeline-bar button").forEach(b=>b.classList.remove("active"));
+  const keys=["melaka","pembentukan","jepun","merdeka"];
+  const i=keys.indexOf(key);
+  if(i>=0) document.querySelectorAll(".timeline-bar button")[i].classList.add("active");
+}
+function closeTimeline() {
+  document.getElementById("timeline-panel").classList.remove("open");
+  document.querySelectorAll(".timeline-bar button").forEach(b=>b.classList.remove("active"));
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+window.addEventListener("DOMContentLoaded", () => {
+  S.flow = "main_menu";
+  botMsg("Hai! Saya *SejarahMate AI* \u{1F1F2}\u{1F1FE}. Jom belajar Sejarah Form 4 & 5!\n\nAwak boleh taip soalan atau klik butang di bawah. Guna bar biru di atas untuk lihat garis masa sejarah.",
+    ["\u{1F4D6} Terangkan Topik", "\u{1F9E0} Mula Kuiz", "\u{1F198} Bantuan"]);
+});
+</script>
+</body>
+</html>
